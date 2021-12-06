@@ -22,6 +22,16 @@ struct ReverseSingleResponse {
     pub name: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct ReverseBulkRequest {
+    pub addresses: Vec<H160>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct ReverseBulkResponse {
+    pub result: Map<H160, String>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct ErrorResponse {
     pub error: String,
@@ -67,6 +77,28 @@ impl Client {
     }
 
     pub fn bulk_reverse(&self, addresses: Vec<H160>) -> Result<Map<H160, String>, EnsApiError> {
-        Err(EnsApiError::Unknown)
+        let agent = ureq::AgentBuilder::new()
+            .timeout_read(Duration::from_secs(60))
+            .timeout_write(Duration::from_secs(5))
+            .build();
+
+        let payload = serde_json::to_string(&ReverseBulkRequest { addresses }).unwrap();
+        println!("ENS-API-CLIENT URL={} PAYLOAD={}", self.address, payload);
+        let rq = agent
+            .post(&self.address)
+            .set("Content-Type", "application/json");
+        let response: String = match rq.call() {
+            Ok(x) => x.into_string().unwrap(),
+            Err(e) => return Err(EnsApiError::RequestError(e.to_string())),
+        };
+        println!("ENS-API-CLIENT response={}", response);
+        if let Ok(err) = serde_json::from_str::<ErrorResponse>(&response) {
+            return Err(EnsApiError::ApiError(err.error));
+        };
+        let res = match serde_json::from_str::<ReverseBulkResponse>(&response) {
+            Ok(x) => x.result,
+            Err(e) => return Err(EnsApiError::ParseError(e.to_string())),
+        };
+        Ok(res)
     }
 }
