@@ -44,7 +44,7 @@ pub struct Client {
 impl Client {
     pub fn default() -> Self {
         Self {
-            address: "https://enormous.cloud/ens/".to_owned(),
+            address: "https://enormous.cloud/ens/reverse/".to_owned(),
         }
     }
     pub fn new(address: &str) -> Self {
