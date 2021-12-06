@@ -10,6 +10,8 @@ pub enum EnsApiError {
     RequestError(String),
     #[error("response parsing error {0}")]
     ParseError(String),
+    #[error("server API error {0}")]
+    ApiError(String),
     #[error("unknown client error")]
     Unknown,
 }
@@ -18,6 +20,11 @@ pub enum EnsApiError {
 struct ReverseSingleResponse {
     pub address: H160,
     pub name: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct ErrorResponse {
+    pub error: String,
 }
 
 pub struct Client {
@@ -49,6 +56,9 @@ impl Client {
             Err(e) => return Err(EnsApiError::RequestError(e.to_string())),
         };
         println!("ENS-API-CLIENT response={}", response);
+        if let Ok(err) = serde_json::from_str::<ErrorResponse>(&response) {
+            return Err(EnsApiError::ApiError(err.error));
+        };
         let res = match serde_json::from_str::<ReverseSingleResponse>(&response) {
             Ok(x) => x.name,
             Err(e) => return Err(EnsApiError::ParseError(e.to_string())),
