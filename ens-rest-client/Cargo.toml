@@ -1,0 +1,17 @@
+[package]
+name = "ens-rest-client"
+version = "0.1.0"
+authors = ["EnormousCloud"]
+edition = "2018"
+license = "MIT"
+repository = "https://github.com/EnormousCloud/ens-api/"
+homepage = "https://github.com/EnormousCloud/ens-api/"
+description = "Ethereum Name Service Rust client library"
+readme = "README.md"
+
+[dependencies]
+thiserror = { version = "1.0" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+ureq = { version = "2.3" }
+ethereum-types = { version = "0.12" }
