@@ -1,6 +1,7 @@
 pub mod api;
 pub mod args;
 pub mod ens;
+pub mod hextext;
 pub mod web3sync;
 
 pub fn main() -> anyhow::Result<()> {
