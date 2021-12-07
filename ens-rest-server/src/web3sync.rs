@@ -16,24 +16,24 @@ struct EvmNumericResult {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct RpcSingleResponse<T> {
+pub struct RpcSingleResponse<T> {
     pub id: serde_json::Value,
     pub result: T,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct RpcError {
+pub struct RpcError {
     pub code: i32,
     pub message: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct RpcId {
+pub struct RpcId {
     pub id: serde_json::Value,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct RpcErrorResponse {
+pub struct RpcErrorResponse {
     pub id: serde_json::Value,
     pub error: RpcError,
 }
@@ -94,11 +94,11 @@ impl EthClient {
             Ok(x) => x.into_string().unwrap(),
             Err(e) => return Err(anyhow::Error::new(e)),
         };
+        tracing::debug!("JSONRPC response={}", response);
         if let Ok(err) = serde_json::from_str::<RpcErrorResponse>(&response) {
             return Err(anyhow::Error::msg(err.error.message));
         }
 
-        tracing::debug!("JSONRPC response={}", response);
         Ok(serde_json::from_str::<T>(&response).unwrap())
     }
 
