@@ -4,8 +4,6 @@ use std::str::FromStr;
 use tiny_keccak::{Hasher, Keccak};
 use web3::types::H160;
 
-const ENS_REVERSE_REGISTRAR_DOMAIN: &str = "addr.reverse";
-
 // namehash generates a hash from a name that can be used to look up the name in ENS
 fn namehash(name: &str) -> Vec<u8> {
     let mut node = vec![0u8; 32];
@@ -53,9 +51,9 @@ impl Ens {
         }
     }
 
-    pub fn get_resolver(&self, address: H160) -> anyhow::Result<H160> {
-        let method_str = "0x0178b8bf";
-        let resolver_addr = format!("{:x}.{}", address, ENS_REVERSE_REGISTRAR_DOMAIN);
+    fn get_resolver(&self, address: H160) -> anyhow::Result<H160> {
+        let method_str = "0x0178b8bf"; // "resolver(bytes32)"
+        let resolver_addr = format!("{:x}.addr.reverse", address);
         let nh: String = namehash(&resolver_addr)
             .iter()
             .map(|x| format!("{:02x}", x))
@@ -81,6 +79,36 @@ impl Ens {
         };
         Ok(res)
     }
+
+    fn get_name(&self, address: H160, resolver: H160) -> anyhow::Result<String> {
+        let method_str = "0x691f3431"; // "name(bytes32)"
+        let resolver_addr = format!("{:x}.addr.reverse", address);
+        let nh: String = namehash(&resolver_addr)
+            .iter()
+            .map(|x| format!("{:02x}", x))
+            .collect();
+        let payload = format!(
+            r#"{{"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{{
+    "from":"0x0000000000000000000000000000000000000000","data":"{}{}","to":"{:?}"
+    }},"latest"]}}"#,
+            method_str, nh, resolver
+        );
+        let strx: String = match self
+            .client
+            .execute_str::<RpcSingleResponse<String>>(&payload)
+        {
+            Ok(x) => x.result,
+            Err(e) => return Err(anyhow::Error::msg(e)),
+        };
+        let out = match hex::decode(strx.replace("0x", "")) {
+            Ok(x) => match crate::hextext::HexReader::new(x) {
+                Ok(mut x) => x.text(),
+                Err(e) => return Err(anyhow::Error::msg(e)),
+            },
+            Err(e) => return Err(anyhow::Error::msg(e)),
+        };
+        Ok(out)
+    }
 }
 
 #[cfg(test)]
@@ -95,9 +123,11 @@ mod tests {
             .init();
 
         let addr: H160 = hex!("6518c695cdcbefa272a4e5ef73bd46e801983e19").into();
-        let expected: H160 = hex!("a2c122be93b0074270ebee7f6b7292c7deb45047").into();
+        let resolver: H160 = hex!("a2c122be93b0074270ebee7f6b7292c7deb45047").into();
         let ens = super::Ens::new("http://localhost:8545");
         let result = ens.get_resolver(addr).unwrap();
-        assert_eq!(expected, result);
+        assert_eq!(resolver, result);
+        let name = ens.get_name(addr, resolver).unwrap();
+        assert_eq!(name, "enormouscloud.eth");
     }
 }
