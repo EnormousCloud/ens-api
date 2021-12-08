@@ -112,7 +112,7 @@ impl Ens {
     }
 }
 
-#[cached(time = 3600)]
+#[cached(time = 86400)]
 pub fn reverse(rpc_address: String, address: H160) -> String {
     let ens = Ens::new(&rpc_address);
     let resolver = match ens.get_resolver(address) {

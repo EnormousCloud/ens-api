@@ -16,7 +16,7 @@ pub struct Args {
 
 pub fn parse() -> anyhow::Result<Args> {
     dotenv::dotenv().ok();
-    let log_level: String = std::env::var("LOG_LEVEL").unwrap_or("info".to_owned());
+    let log_level: String = std::env::var("LOG_LEVEL").unwrap_or("debug".to_owned());
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::new(log_level))
         .init();
