@@ -1,4 +1,5 @@
 use crate::web3sync::{EthClient, RpcSingleResponse};
+use cached::proc_macro::cached;
 use hex_literal::hex;
 use std::str::FromStr;
 use tiny_keccak::{Hasher, Keccak};
@@ -111,6 +112,19 @@ impl Ens {
     }
 }
 
+#[cached(time = 3600)]
+pub fn reverse(rpc_address: String, address: H160) -> String {
+    let ens = Ens::new(&rpc_address);
+    let resolver = match ens.get_resolver(address) {
+        Ok(x) => x,
+        Err(_) => return "".to_owned(),
+    };
+    match ens.get_name(address, resolver) {
+        Ok(x) => x,
+        Err(_) => "".to_owned(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
@@ -118,9 +132,9 @@ mod tests {
 
     #[test]
     pub fn it_reads_resolver() {
-        tracing_subscriber::fmt()
-            .with_env_filter(tracing_subscriber::EnvFilter::new("debug,ureq=warn"))
-            .init();
+        // tracing_subscriber::fmt()
+        //     .with_env_filter(tracing_subscriber::EnvFilter::new("debug,ureq=warn"))
+        //     .init();
 
         let addr: H160 = hex!("6518c695cdcbefa272a4e5ef73bd46e801983e19").into();
         let resolver: H160 = hex!("a2c122be93b0074270ebee7f6b7292c7deb45047").into();
@@ -128,6 +142,17 @@ mod tests {
         let result = ens.get_resolver(addr).unwrap();
         assert_eq!(resolver, result);
         let name = ens.get_name(addr, resolver).unwrap();
+        assert_eq!(name, "enormouscloud.eth");
+    }
+
+    #[test]
+    pub fn it_reads_reverse() {
+        // tracing_subscriber::fmt()
+        //     .with_env_filter(tracing_subscriber::EnvFilter::new("debug,ureq=warn"))
+        //     .init();
+
+        let addr: H160 = hex!("6518c695cdcbefa272a4e5ef73bd46e801983e19").into();
+        let name = super::reverse("http://localhost:8545/".to_owned(), addr);
         assert_eq!(name, "enormouscloud.eth");
     }
 }
