@@ -24,8 +24,7 @@ async fn main() -> tide::Result<()> {
     let mut app = tide::with_state(state);
     // app.with(telemetry::TraceMiddleware::new());
     app.at("/reverse").get(api::get);
-    app.listen(args.listen.as_str()).await?;
-
-    println!("ens-rest-server");
+    tracing::info!("Starting HTTP server at {}", args.listen);
+    app.listen(&args.listen).await?;
     Ok(())
 }
