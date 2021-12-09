@@ -2,6 +2,7 @@ pub mod api;
 pub mod args;
 pub mod ens;
 pub mod hextext;
+pub mod telemetry;
 pub mod web3sync;
 
 #[derive(Debug, Clone)]
@@ -22,7 +23,7 @@ async fn main() -> tide::Result<()> {
         rpc_endpoint: args.rpc_endpoint.clone(),
     };
     let mut app = tide::with_state(state);
-    // app.with(telemetry::TraceMiddleware::new());
+    app.with(telemetry::TraceMiddleware::new());
     app.at("/reverse").get(api::get);
     tracing::info!("Starting HTTP server at {}", args.listen);
     app.listen(&args.listen).await?;
